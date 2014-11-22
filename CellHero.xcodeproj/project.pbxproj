@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		676A7A391A21505F00364368 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 676A7A381A21505F00364368 /* CoreMotion.framework */; };
 		D13155E51A20C31800EF8426 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13155E41A20C31800EF8426 /* AppDelegate.swift */; };
 		D13155E71A20C31800EF8426 /* GameScene.sks in Resources */ = {isa = PBXBuildFile; fileRef = D13155E61A20C31800EF8426 /* GameScene.sks */; };
 		D13155E91A20C31800EF8426 /* GameScene.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13155E81A20C31800EF8426 /* GameScene.swift */; };
@@ -28,6 +29,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		676A7A381A21505F00364368 /* CoreMotion.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreMotion.framework; path = System/Library/Frameworks/CoreMotion.framework; sourceTree = SDKROOT; };
 		D13155DF1A20C31800EF8426 /* CellHero.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CellHero.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D13155E31A20C31800EF8426 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D13155E41A20C31800EF8426 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
@@ -47,6 +49,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				676A7A391A21505F00364368 /* CoreMotion.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -60,11 +63,20 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		676A7A3A1A21506600364368 /* Framweorks */ = {
+			isa = PBXGroup;
+			children = (
+				676A7A381A21505F00364368 /* CoreMotion.framework */,
+			);
+			name = Framweorks;
+			sourceTree = "<group>";
+		};
 		D13155D61A20C31800EF8426 = {
 			isa = PBXGroup;
 			children = (
 				D13155E11A20C31800EF8426 /* CellHero */,
 				D13155FB1A20C31900EF8426 /* CellHeroTests */,
+				676A7A3A1A21506600364368 /* Framweorks */,
 				D13155E01A20C31800EF8426 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -418,6 +430,7 @@
 				D13156041A20C31900EF8426 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		D13156051A20C31900EF8426 /* Build configuration list for PBXNativeTarget "CellHeroTests" */ = {
 			isa = XCConfigurationList;
@@ -426,6 +439,7 @@
 				D13156071A20C31900EF8426 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

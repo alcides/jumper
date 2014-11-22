@@ -7,6 +7,7 @@
 //
 
 import SpriteKit
+import CoreMotion
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
@@ -145,7 +146,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabelNode.zPosition = 50;
         scoreLabelNode.text = String(score);
         self.addChild(scoreLabelNode);
+
         
+        if(!debug) {
+            return;
+        }
+        
+        //gyro
+        gyroYValue = 0;
+        gyroYValueLabelNode = SKLabelNode(fontNamed: "Calibri");
+        gyroYValueLabelNode.text = NSString(format:"%.4f", "0")
+        gyroYValueLabelNode.position = CGPointMake(CGRectGetMaxX(self.frame) - gyroYValueLabelNode.frame.width, CGRectGetMaxY(self.frame)-150);
+        gyroYValueLabelNode.zPosition = 50;
+        self.addChild(gyroYValueLabelNode);
+        
+        //accl
+        acclYValue = 0;
+        acclYValueLabelNode = SKLabelNode(fontNamed: "Calibri");
+        acclYValueLabelNode.text = NSString(format:"%.4f", "0")
+        acclYValueLabelNode.position = CGPointMake(CGRectGetMaxX(self.frame) - acclYValueLabelNode.frame.width, CGRectGetMaxY(self.frame)-200);
+        acclYValueLabelNode.zPosition = 50;
+        self.addChild(acclYValueLabelNode);
     }
     
     func moveGround() {
@@ -277,5 +298,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bird2.position = CGPointMake(CGFloat(halfFrame + Float(bird.position.x) - 4), bird.position.y);
         bird2.zRotation = bird.zPosition;
         
+    }
+    
+    func outputAccelerationData(acceleration:CMAcceleration)
+    {
+        gyroYValueLabelNode.text = NSString(format:"%.4f", acceleration.y);
+    }
+    
+    func outputRotationData(rotation:CMRotationRate)
+    {
+        acclYValueLabelNode.text = NSString(format: "%.4f", rotation.y);
     }
 }
