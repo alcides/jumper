@@ -7,6 +7,7 @@
 //
 
 import SpriteKit
+import CoreMotion
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
@@ -30,11 +31,38 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let worldCategory:UInt32 = 1<<1
     let pipeCategory:UInt32 = 1<<2
     let scoreCategory:UInt32 = 1<<3
+
+    var debug = true;
+    var gyroYValue = NSInteger();
+    var gyroYValueLabelNode = SKLabelNode();
+    var acclYValue = NSInteger();
+    var acclYValueLabelNode = SKLabelNode();
+    let motionManager = CMMotionManager();
     
     
     var rightScreen = SKSpriteNode();
     
     override func didMoveToView(view: SKView) {
+        
+        //gyro
+        motionManager.accelerometerUpdateInterval = 0.2
+        motionManager.gyroUpdateInterval = 0.2
+        
+        motionManager.startAccelerometerUpdatesToQueue(NSOperationQueue.currentQueue(), withHandler: {(accelerometerData: CMAccelerometerData!, error:NSError!)in
+            self.outputAccelerationData(accelerometerData.acceleration)
+            if (error != nil)
+            {
+                println("\(error)")
+            }
+        })
+        
+        motionManager.startGyroUpdatesToQueue(NSOperationQueue.currentQueue(), withHandler: {(gyroData: CMGyroData!, error: NSError!)in
+            self.outputRotationData(gyroData.rotationRate)
+            if (error != nil)
+            {
+                println("\(error)")
+            }
+        })
         
         reset = false;
 
@@ -114,9 +142,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.addChild(rightScreen);
         
         
-        
-        
-        
         //skor
         score = 0;
         scoreLabelNode = SKLabelNode(fontNamed: "Calibri");
@@ -124,7 +149,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         scoreLabelNode.zPosition = 50;
         scoreLabelNode.text = String(score);
         self.addChild(scoreLabelNode);
+
         
+        if(!debug) {
+            return;
+        }
+        
+        //gyro
+        gyroYValue = 0;
+        gyroYValueLabelNode = SKLabelNode(fontNamed: "Calibri");
+        gyroYValueLabelNode.text = NSString(format:"%.4f", "0")
+        gyroYValueLabelNode.position = CGPointMake(CGRectGetMaxX(self.frame) - gyroYValueLabelNode.frame.width, CGRectGetMaxY(self.frame)-150);
+        gyroYValueLabelNode.zPosition = 50;
+        self.addChild(gyroYValueLabelNode);
+        
+        //accl
+        acclYValue = 0;
+        acclYValueLabelNode = SKLabelNode(fontNamed: "Calibri");
+        acclYValueLabelNode.text = NSString(format:"%.4f", "0")
+        acclYValueLabelNode.position = CGPointMake(CGRectGetMaxX(self.frame) - acclYValueLabelNode.frame.width, CGRectGetMaxY(self.frame)-200);
+        acclYValueLabelNode.zPosition = 50;
+        self.addChild(acclYValueLabelNode);
     }
     
     func moveGround() {
@@ -230,6 +275,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
     }
+    
     func clamp(min:CGFloat,max:CGFloat,value:CGFloat)->CGFloat {
         if(value>max){
             return max;
@@ -241,8 +287,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return value;
         }
     }
+    
     override func update(currentTime: CFTimeInterval) {
         /* Called before each frame is rendered */
         bird.zRotation = self.clamp( -1, max: 0.5, value: bird.physicsBody!.velocity.dy * ( bird.physicsBody!.velocity.dy < 0 ? 0.003 : 0.001));
+    }
+    
+    func outputAccelerationData(acceleration:CMAcceleration)
+    {
+        gyroYValueLabelNode.text = NSString(format:"%.4f", acceleration.y);
+    }
+    
+    func outputRotationData(rotation:CMRotationRate)
+    {
+        acclYValueLabelNode.text = NSString(format: "%.4f", rotation.y);
     }
 }
