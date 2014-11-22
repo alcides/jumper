@@ -242,6 +242,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 bird.physicsBody?.collisionBitMask = worldCategory | pipeCategory;
                 //kuş çarpar dönererek aşağıya düşer
                 bird.runAction(SKAction.rotateByAngle(CGFloat(M_PI)*CGFloat(bird.position.y)*0.01, duration:1), completion:{self.bird.speed = 0});
+                bird2.runAction(SKAction.rotateByAngle(CGFloat(M_PI)*CGFloat(bird2.position.y)*0.01, duration:1), completion:{self.bird2.speed = 0});
+                
                 
                 self.removeActionForKey("bitir")
                 self.runAction(SKAction.sequence([SKAction.repeatAction(SKAction.sequence([SKAction.runBlock({
