@@ -10,7 +10,9 @@ import SpriteKit
 
 class GameScene: SKScene, SKPhysicsContactDelegate {
     
+    
     var bird = SKSpriteNode();
+    var bird2 = SKSpriteNode();
     var sprite = SKSpriteNode();
     var pipeUpTexture = SKTexture();
     var pipeDownTexture = SKTexture();
@@ -29,12 +31,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let birdCategory:UInt32 = 1<<0
     let worldCategory:UInt32 = 1<<1
     let pipeCategory:UInt32 = 1<<2
-    let scoreCategory:UInt32 = 1<<3
     
+    let birdCategory2:UInt32 = 1<<3
+    let worldCategory2:UInt32 = 1<<4
+    let pipeCategory2:UInt32 = 1<<5
+    
+    let scoreCategory:UInt32 = 1<<6
     
     var rightScreen = SKSpriteNode();
+    var halfFrame:Float = 2;;
     
     override func didMoveToView(view: SKView) {
+        
+        halfFrame = Float(self.frame.width)/2;
         
         reset = false;
 
@@ -111,10 +120,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         self.runAction(spawnThenDelayForever);
         
         
+
+        var background2 = SKShapeNode();
+        
+        let box = CGRectMake(self.frame.width/2, 0, self.frame.width/2, self.frame.height);
+        background2.path = UIBezierPath(rect: box).CGPath;
+        background2.fillColor = backgroundColor;
+        
+        rightScreen.addChild(background2)
+        
+        
+        
+        let bird2:SKSpriteNode = bird.copy() as SKSpriteNode;
+        bird2.position = CGPointMake(CGFloat(halfFrame + Float(bird.position.x) - 4), bird.position.y);
+        rightScreen.addChild(bird2);
+        
         self.addChild(rightScreen);
-        
-        
-        
         
         
         //skor
@@ -180,12 +201,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bird.physicsBody?.collisionBitMask = worldCategory | pipeCategory;
         bird.speed = 1;
         bird.zRotation = 0;
+        bird2.position = bird.position;
+        bird2.zRotation = bird.zRotation;
         score = 0;
         reset = false;
         pipes.removeAllChildren();
         scoreLabelNode.text = String(score);
         moving.speed = 1; // ground hareket animasyonu tekrar başlatır
     }
+    
+    
     override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
         /* Called when a touch begins */
         if(moving.speed > 0){
@@ -230,6 +255,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
         
     }
+    
     func clamp(min:CGFloat,max:CGFloat,value:CGFloat)->CGFloat {
         if(value>max){
             return max;
@@ -241,8 +267,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             return value;
         }
     }
+    
     override func update(currentTime: CFTimeInterval) {
         /* Called before each frame is rendered */
         bird.zRotation = self.clamp( -1, max: 0.5, value: bird.physicsBody!.velocity.dy * ( bird.physicsBody!.velocity.dy < 0 ? 0.003 : 0.001));
+        
+        bird2.position = CGPointMake(CGFloat(halfFrame + Float(bird.position.x) - 4), bird.position.y);
+        bird2.zRotation = bird.zPosition;
+        
     }
 }
