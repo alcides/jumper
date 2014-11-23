@@ -123,7 +123,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         pipeMoveAndRemove = SKAction.sequence([movePipes,removePipes]);
 
-        
         birdLeft  = createWorld(0);
         birdRight = createWorld(self.frame.size.width/2);
         
@@ -248,7 +247,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let height = UInt32(self.frame.size.height/4);
         let y = arc4random() % height + height;
         
-        pipesRight.addChild(spawnPipes(self.frame.size.width/2, andYPosition: y));
+        pipesLeft.addChild(spawnPipes(self.frame.size.width/2, andYPosition: y));
         pipesRight.addChild(spawnPipes(self.frame.size.width,   andYPosition: y));
     }
     
