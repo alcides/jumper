@@ -16,6 +16,9 @@
 		D13155F01A20C31900EF8426 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D13155EF1A20C31900EF8426 /* Images.xcassets */; };
 		D13155F31A20C31900EF8426 /* LaunchScreen.xib in Resources */ = {isa = PBXBuildFile; fileRef = D13155F11A20C31900EF8426 /* LaunchScreen.xib */; };
 		D13155FF1A20C31900EF8426 /* CellHeroTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13155FE1A20C31900EF8426 /* CellHeroTests.swift */; };
+		D18658071A221C3F0025ECA0 /* sheep.wav in Resources */ = {isa = PBXBuildFile; fileRef = D18658061A221C3F0025ECA0 /* sheep.wav */; };
+		D186580A1A221C9F0025ECA0 /* Clouds.sks in Resources */ = {isa = PBXBuildFile; fileRef = D18658081A221C9F0025ECA0 /* Clouds.sks */; };
+		D186580B1A221C9F0025ECA0 /* spark.png in Resources */ = {isa = PBXBuildFile; fileRef = D18658091A221C9F0025ECA0 /* spark.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -42,6 +45,9 @@
 		D13155F81A20C31900EF8426 /* CellHeroTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CellHeroTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D13155FD1A20C31900EF8426 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D13155FE1A20C31900EF8426 /* CellHeroTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CellHeroTests.swift; sourceTree = "<group>"; };
+		D18658061A221C3F0025ECA0 /* sheep.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = sheep.wav; sourceTree = "<group>"; };
+		D18658081A221C9F0025ECA0 /* Clouds.sks */ = {isa = PBXFileReference; lastKnownFileType = file.sks; path = Clouds.sks; sourceTree = "<group>"; };
+		D18658091A221C9F0025ECA0 /* spark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = spark.png; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,6 +99,7 @@
 		D13155E11A20C31800EF8426 /* CellHero */ = {
 			isa = PBXGroup;
 			children = (
+				D18658061A221C3F0025ECA0 /* sheep.wav */,
 				D13155E41A20C31800EF8426 /* AppDelegate.swift */,
 				D13155E61A20C31800EF8426 /* GameScene.sks */,
 				D13155E81A20C31800EF8426 /* GameScene.swift */,
@@ -101,6 +108,8 @@
 				D13155EF1A20C31900EF8426 /* Images.xcassets */,
 				D13155F11A20C31900EF8426 /* LaunchScreen.xib */,
 				D13155E21A20C31800EF8426 /* Supporting Files */,
+				D18658081A221C9F0025ECA0 /* Clouds.sks */,
+				D18658091A221C9F0025ECA0 /* spark.png */,
 			);
 			path = CellHero;
 			sourceTree = "<group>";
@@ -212,9 +221,12 @@
 			buildActionMask = 2147483647;
 			files = (
 				D13155F31A20C31900EF8426 /* LaunchScreen.xib in Resources */,
+				D18658071A221C3F0025ECA0 /* sheep.wav in Resources */,
 				D13155F01A20C31900EF8426 /* Images.xcassets in Resources */,
+				D186580B1A221C9F0025ECA0 /* spark.png in Resources */,
 				D13155E71A20C31800EF8426 /* GameScene.sks in Resources */,
 				D13155EE1A20C31800EF8426 /* Main.storyboard in Resources */,
+				D186580A1A221C9F0025ECA0 /* Clouds.sks in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -21,10 +21,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
     var sheepTexture = SKTexture();
     
+    var bgTexture = SKTexture();
+    
     
     var pipeMoveAndRemove = SKAction();
     var sheepMoveAndRemove = SKAction();
-    var bgMoveAndRemove = SKAction();
     let pipeGap = 150.0;
     var skyColor = SKColor();
     
@@ -72,19 +73,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         screenWidth = view.frame.width;
         screenHeight = view.frame.height;
         
-        let distanceToMove = CGFloat(self.frame.size.height);
-        let movePipes = SKAction.moveByX(0, y: -distanceToMove, duration: NSTimeInterval(0.01*distanceToMove));
-        let moveSheeps = SKAction.moveByX(0, y: -distanceToMove, duration: NSTimeInterval(0.007*distanceToMove));
-        let moveBg = SKAction.moveByX(0, y: -distanceToMove, duration: NSTimeInterval(0.01*distanceToMove));
-        let resetBg = SKAction.moveBy(CGVectorMake(0, +distanceToMove), duration: NSTimeInterval(0));
-        
-        let removePipes = SKAction.removeFromParent();
-        
-        pipeMoveAndRemove = SKAction.sequence([movePipes,removePipes]);
-        sheepMoveAndRemove = SKAction.sequence([moveSheeps,removePipes]);
-        bgMoveAndRemove = SKAction.repeatActionForever(SKAction.sequence([moveBg,resetBg]));
-
-        
         //gyro
         motionManager.accelerometerUpdateInterval = 0.2
         halfFrame = Float(self.frame.width)/2;
@@ -103,30 +91,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         skyColor = SKColor(red: 81.0/255.0, green: 192.0/255.0, blue: 201.0/255.0, alpha: 1.0);
         self.backgroundColor = skyColor;
-    
-        var background2 = SKNode();
-        background2.zPosition = 5;
-        background2.position = CGPointMake(self.frame.width/2, self.frame.height/2);
         
-        var bgTexture = SKTexture(imageNamed: "grass");
+        
+        bgTexture = SKTexture(imageNamed: "background");
         bgTexture.filteringMode = SKTextureFilteringMode.Nearest;
-        
-        for index in -30...30 {
-            let bg = SKSpriteNode(texture: bgTexture);
-            bg.zPosition = -100;
-            //bg.anchorPoint = CGPointZero;
-            bg.position = CGPoint(x: 0, y: bg.size.height * CGFloat(index))
-            bg.name = "background";
-
-            var b2 = bg.copy() as SKSpriteNode;
-            b2.position = CGPoint(x: self.frame.size.width/2, y: bg.size.height * CGFloat(index))
-            b2.zPosition = 7;
-                
-            self.addChild(bg);
-            self.addChild(b2);
-            bg.runAction(bgMoveAndRemove);
-            b2.runAction(bgMoveAndRemove);
-        }
+        var bg = SKSpriteNode(texture: bgTexture);
+        bg.zPosition = -100;
+        bg.position = CGPointMake(bg.frame.width/2, bg.frame.height/2);
+        self.addChild(bg);
         
         moving = SKNode();
         self.addChild(moving);
@@ -153,7 +125,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bird.setScale(0.4);
         bird.position = CGPoint(x: self.frame.size.width / 4, y: self.frame.size.height*0.6);
         
-        bird.zPosition = 10;
+        bird.zPosition = 4;
         bird.physicsBody = SKPhysicsBody(circleOfRadius: bird.size.height/4);
         bird.physicsBody?.dynamic = false;
         bird.physicsBody?.allowsRotation = false;
@@ -162,20 +134,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bird.physicsBody?.collisionBitMask = worldCategory | pipeCategory;
         bird.physicsBody?.contactTestBitMask = worldCategory | pipeCategory;
         
+        let distanceToMove = CGFloat(self.frame.size.height * 2);
+        let movePipes = SKAction.moveByX(0, y: -distanceToMove, duration: NSTimeInterval(0.01*distanceToMove));
+        let moveSheeps = SKAction.moveByX(0, y: -distanceToMove, duration: NSTimeInterval(0.007*distanceToMove));
+        let removePipes = SKAction.removeFromParent();
+        
+        pipeMoveAndRemove = SKAction.sequence([movePipes,removePipes]);
+        sheepMoveAndRemove = SKAction.sequence([moveSheeps,removePipes]);
         
         //spawnpipes
         
         let spawn = SKAction.runBlock({() in self.spawnPipes()});
-        let delay = SKAction.waitForDuration(NSTimeInterval(0.5));
+        let delay = SKAction.waitForDuration(NSTimeInterval(1.0));
         let spawnThenDelay = SKAction.sequence([spawn,delay]);
         let spawnThenDelayForever = SKAction.repeatActionForever(spawnThenDelay);
         
         self.runAction(spawnThenDelayForever);
         
         let box = CGRectMake(self.frame.width/2, 0, self.frame.width/2, self.frame.height/2);
+        
         var bgcrop = SKCropNode();
         var mask = SKSpriteNode(color:SKColor.blackColor(), size: CGSizeMake(self.frame.width, self.frame.height))
-        mask.anchorPoint = CGPointZero;
+        
+        var background2 = SKSpriteNode(texture: bgTexture);
+        background2.zPosition = 5;
+        background2.position = CGPointMake(self.frame.width/2, self.frame.height/2);
         
         bgcrop.maskNode = mask;
         bgcrop.addChild(background2);
@@ -218,11 +201,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let z:CGFloat = 20;
             let x:CGFloat = CGFloat(arc4random_uniform(1000))/2000 * self.frame.size.width;
             
-            println(x - z * 0.8);
-            
             let sheep = SKSpriteNode(texture: sheepTexture);
             sheep.position = CGPointMake(x - z * 0.8, self.frame.size.height * 2);
-            sheep.zPosition = 20;
+            sheep.zPosition = 4;
             sheep.setScale(0.3);
             sheep.physicsBody = SKPhysicsBody(rectangleOfSize: sheep.size);
             sheep.physicsBody?.dynamic = false;
@@ -231,19 +212,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             sheep.runAction(pipeMoveAndRemove);
             moving.addChild(sheep);
             
-            println(self.frame.width/2 * 1.2 + 50 + x + z);
             let sheep2 = sheep.copy() as SKSpriteNode;
             sheep2.position = CGPointMake(self.frame.width/2 * 1.2 + 50 + x + z, self.frame.size.height * 2);
             sheep2.zPosition = 10;
             sheep2.runAction(pipeMoveAndRemove);
             moving2.addChild(sheep2);
+
         }
         
         let z:CGFloat = 20;
         let x:CGFloat = CGFloat(arc4random_uniform(1000))/2000 * self.frame.size.width;
         let object = SKSpriteNode(texture: objTexture);
         object.position = CGPointMake(x - z * 0.8, self.frame.size.height * 2);
-        object.zPosition = 6;
+        object.zPosition = 4;
         object.setScale(0.9);
         object.physicsBody = SKPhysicsBody(rectangleOfSize: object.size);
         object.physicsBody?.dynamic = false;
@@ -314,7 +295,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 bird.speed = 0;
                 bird2.speed = 0;
                 self.removeActionForKey("bitir")
-                self.runAction(SKAction.sequence([SKAction.repeatAction(SKAction.sequence([SKAction.waitForDuration(NSTimeInterval(0.05)), SKAction.runBlock({
+                self.runAction(SKAction.sequence([SKAction.repeatAction(SKAction.sequence([SKAction.runBlock({
+                    self.backgroundColor = SKColor(red: 1, green: 0, blue: 0, alpha: 1.0);
+                    self.background2.fillColor = SKColor(red: 1, green: 0, blue: 0, alpha: 1.0);
+                }),SKAction.waitForDuration(NSTimeInterval(0.05)), SKAction.runBlock({
                     self.backgroundColor = self.skyColor;
                     self.background2.fillColor = self.skyColor;
                 }), SKAction.waitForDuration(NSTimeInterval(0.05))]), count:4), SKAction.runBlock({
@@ -331,19 +315,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func update(currentTime: CFTimeInterval) {
         
-    
         if moving.speed == 0 {
             return;
         }
-        
-        self.enumerateChildNodesWithName("background", usingBlock: { (node:SKNode!, stop:UnsafeMutablePointer <ObjCBool>) -> Void in
-            let bg = node as SKSpriteNode;
-            bg.position = CGPointMake(bg.position.x, bg.position.y - 5);
-            
-            if bg.position.x <= -bg.size.width {
-                bg.position = CGPointMake(bg.position.x + bg.size.width * 2, bg.position.y);
-            }
-        });
         
         if (!hasClouds) {
             if birdZ > -0.9 {
@@ -354,12 +328,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     let x:CGFloat = CGFloat(arc4random_uniform(1000))/2000 * self.frame.size.width;
                     let y:CGFloat = CGFloat(arc4random_uniform(1000))/1000 * self.frame.size.height;
                     cloud.position = CGPointMake(x, y);
-                    cloud.zPosition = 10;
+                    cloud.zPosition = 2;
                     
                     
                     let cloud2 = cloud.copy() as SKEmitterNode;
                     cloud2.position = CGPointMake(self.frame.width/2 + x, y);
-                    cloud.zPosition = 10;
+                    cloud.zPosition = 9;
                     
                     clouds.addChild(cloud);
                     clouds.addChild(cloud2);
@@ -398,6 +372,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if newZ < 0 {
             newZ = 0;
         }
+        
+        println(birdZ);
         
 
         if  (!self.reset) {
