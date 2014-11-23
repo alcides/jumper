@@ -28,7 +28,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var scoreLabelNode = SKLabelNode();
     var score = NSInteger();
     var reset = Bool();
-    var pipes:SKNode!;
+
+    var pipesLeft:SKNode!;
+    var pipesRight:SKNode!;
+    
     var moving:SKNode!;
     
     var goUp:Double = 0;
@@ -84,8 +87,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         moving = SKNode();
         self.addChild(moving);
-        pipes = SKNode();
-        moving.addChild(pipes);
+        pipesLeft  = SKNode();
+        pipesRight = SKNode();
+        moving.addChild(pipesLeft);
+        moving.addChild(pipesRight);
         
         groundTexture = SKTexture(imageNamed: "ground");
         groundTexture.filteringMode = SKTextureFilteringMode.Nearest;
@@ -124,6 +129,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         self.addChild(birdLeft);
         self.addChild(birdRight);
+        
+        //spawnpipes
+        let spawn = SKAction.runBlock({() in self.spawnPipes()});
+        let delay = SKAction.waitForDuration(NSTimeInterval(2.0));
+        let spawnThenDelay = SKAction.sequence([spawn,delay]);
+        let spawnThenDelayForever = SKAction.repeatActionForever(spawnThenDelay);
+        
+        self.runAction(spawnThenDelayForever);
+        
+        //core
+        score = 0;
+        scoreLabelNode = SKLabelNode(fontNamed: "Calibri");
+        scoreLabelNode.position = CGPointMake(CGRectGetMidX(self.frame), 3*self.frame.size.height/4 + 100);
+        scoreLabelNode.zPosition = 50;
+        scoreLabelNode.text = String(score);
+        self.addChild(scoreLabelNode);
+        
+        
+        if(!debug) {
+            return;
+        }
+        
+        //gyro
+        gyroYValue = 0;
+        gyroYValueLabelNode = SKLabelNode(fontNamed: "Calibri");
+        gyroYValueLabelNode.text = NSString(format:"%.4f", "0")
+        gyroYValueLabelNode.position = CGPointMake(CGRectGetMaxX(self.frame) - gyroYValueLabelNode.frame.width, CGRectGetMaxY(self.frame)-150);
+        gyroYValueLabelNode.zPosition = 50;
+        self.addChild(gyroYValueLabelNode);
+        
+        //accl
+        acclYValue = 0;
+        acclYValueLabelNode = SKLabelNode(fontNamed: "Calibri");
+        acclYValueLabelNode.text = NSString(format:"%.4f", "0")
+        acclYValueLabelNode.position = CGPointMake(CGRectGetMaxX(self.frame) - acclYValueLabelNode.frame.width, CGRectGetMaxY(self.frame)-200);
+        acclYValueLabelNode.zPosition = 50;
+        self.addChild(acclYValueLabelNode);
+
     }
     
     func createWorld(offset: CGFloat) -> SKSpriteNode {
@@ -150,43 +193,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         line.path = UIBezierPath(rect: box).CGPath;
         self.addChild(line);
         
-        //spawnpipes
-        let spawn = SKAction.runBlock({() in self.spawnPipes()});
-        let delay = SKAction.waitForDuration(NSTimeInterval(2.0));
-        let spawnThenDelay = SKAction.sequence([spawn,delay]);
-        let spawnThenDelayForever = SKAction.repeatActionForever(spawnThenDelay);
-        
-        self.runAction(spawnThenDelayForever);
-        
-        //core
-        score = 0;
-        scoreLabelNode = SKLabelNode(fontNamed: "Calibri");
-        scoreLabelNode.position = CGPointMake(CGRectGetMidX(self.frame), 3*self.frame.size.height/4 + 100);
-        scoreLabelNode.zPosition = 50;
-        scoreLabelNode.text = String(score);
-        self.addChild(scoreLabelNode);
-        
-        
-        if(!debug) {
-            return bird;
-        }
-        
-        //gyro
-        gyroYValue = 0;
-        gyroYValueLabelNode = SKLabelNode(fontNamed: "Calibri");
-        gyroYValueLabelNode.text = NSString(format:"%.4f", "0")
-        gyroYValueLabelNode.position = CGPointMake(CGRectGetMaxX(self.frame) - gyroYValueLabelNode.frame.width, CGRectGetMaxY(self.frame)-150);
-        gyroYValueLabelNode.zPosition = 50;
-        self.addChild(gyroYValueLabelNode);
-        
-        //accl
-        acclYValue = 0;
-        acclYValueLabelNode = SKLabelNode(fontNamed: "Calibri");
-        acclYValueLabelNode.text = NSString(format:"%.4f", "0")
-        acclYValueLabelNode.position = CGPointMake(CGRectGetMaxX(self.frame) - acclYValueLabelNode.frame.width, CGRectGetMaxY(self.frame)-200);
-        acclYValueLabelNode.zPosition = 50;
-        self.addChild(acclYValueLabelNode);
-        
         return bird;
     }
     
@@ -196,13 +202,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         moveGroundSpritesForever = SKAction.repeatActionForever(SKAction.sequence([moveGroundSprite,resetGroundSprite]));
     }
     
-    func spawnPipes(offset: CGFloat) {
+    func spawnPipes(offset: CGFloat, andYPosition y:UInt32) -> SKNode{
         let pipePair = SKNode();
-        pipePair.position = CGPointMake(offset + pipeUpTexture.size().width * 2 , 0);
+        pipePair.position = CGPointMake(offset , 0);
         pipePair.zPosition = -10;
-        
-        let height = UInt32(self.frame.size.height/4);
-        let y = arc4random() % height + height;
         
         let pipeDown = SKSpriteNode(texture: pipeDownTexture);
         pipeDown.setScale(0.5);
@@ -212,17 +215,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pipeDown.physicsBody?.categoryBitMask = pipeCategory;
         pipeDown.physicsBody?.contactTestBitMask = birdCategory;
 
-        pipePair.addChild(pipeDown);
-        pipePair.runAction(pipeMoveAndRemove);
-        pipes.addChild(pipePair);
-    }
-    
-    func spawnPipes() {
-        //spawnPipes(0);
-        spawnPipes(self.frame.size.width);
         
-        
-        /*let pipeUp = SKSpriteNode(texture: pipeUpTexture);
+        let pipeUp = SKSpriteNode(texture: pipeUpTexture);
         pipeUp.setScale(0.5);
         pipeUp.position = CGPointMake(0, CGFloat(y));
         
@@ -230,16 +224,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         pipeUp.physicsBody?.dynamic = false;
         pipeUp.physicsBody?.categoryBitMask = pipeCategory;
         pipeUp.physicsBody?.contactTestBitMask = birdCategory;
-        pipePair.addChild(pipeUp);
         
         var contactNode = SKNode();
-        contactNode.position = CGPointMake(pipeDown.size.width+bird.size.width/2, CGRectGetMidY(self.frame));
+        contactNode.position = CGPointMake(pipeDown.size.width+birdLeft.size.width/2, CGRectGetMidY(self.frame));
         contactNode.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(pipeUp.size.width, self.frame.size.height));
         contactNode.physicsBody?.dynamic = false;
         contactNode.physicsBody?.categoryBitMask = scoreCategory;
         contactNode.physicsBody?.contactTestBitMask = birdCategory;
-        pipePair.addChild(contactNode);*/
         
+        pipePair.addChild(pipeDown);
+        pipePair.addChild(pipeUp);
+        pipePair.addChild(contactNode)
+        pipePair.runAction(pipeMoveAndRemove);
+        return pipePair;
+    }
+    
+    func spawnPipes() {
+        /* game already finished */
+        if(moving.speed == 0) {
+            return;
+        }
+        
+        let height = UInt32(self.frame.size.height/4);
+        let y = arc4random() % height + height;
+        
+        pipesRight.addChild(spawnPipes(self.frame.size.width/2, andYPosition: y));
+        pipesRight.addChild(spawnPipes(self.frame.size.width,   andYPosition: y));
     }
     
     func gameReset()-> Void {
@@ -248,9 +258,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         score = 0;
         reset = false;
-        pipes.removeAllChildren();
+        pipesRight.removeAllChildren();
+        pipesLeft.removeAllChildren();
         scoreLabelNode.text = String(score);
-        moving.speed = 1; // ground hareket animasyonu tekrar başlatır
+        moving.speed = 1;
     }
     
     func resetBird(bird: SKSpriteNode, withOffset offset: CGFloat) {
@@ -273,12 +284,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             
             if(( contact.bodyA.categoryBitMask & scoreCategory ) == scoreCategory || ( contact.bodyB.categoryBitMask & scoreCategory ) == scoreCategory ) {
                 
-                //skoru arttırır ve label a yazar
                 score++;
-                print("anıl \(score)");
                 scoreLabelNode.text = String(score);
-                
-                //skor artınca label büyüt ve küçült animasyonu
                 scoreLabelNode.runAction(SKAction.sequence([SKAction.scaleTo(1.5, duration: NSTimeInterval(0.1)),SKAction.scaleTo(1, duration: NSTimeInterval(0.1))]));
             }
             else {
@@ -318,6 +325,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         /* Called before each frame is rendered */
         birdLeft.position.y.advancedBy(CGFloat(goUp));
         birdRight.position.y.advancedBy(CGFloat(goUp));
+        
         goUp = 0;
     }
     
