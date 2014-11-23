@@ -16,12 +16,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var bird2 = SKSpriteNode();
     var sprite = SKSpriteNode();
     var ground = SKNode();
-    var pipeUpTexture = SKTexture();
-    var pipeDownTexture = SKTexture();
+    var objTexture = SKTexture();
+    var objTexture2 = SKTexture();
+
+    var sheepTexture = SKTexture();
+    
+    
     var pipeMoveAndRemove = SKAction();
-    var groundTexture = SKTexture();
+    var sheepMoveAndRemove = SKAction();
+    var bgMoveAndRemove = SKAction();
     let pipeGap = 150.0;
-    var moveGroundSpritesForever = SKAction();
     var skyColor = SKColor();
     
     var scoreLabelNode = SKLabelNode();
@@ -29,8 +33,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var reset = Bool();
     var pipes:SKNode!;
     var moving:SKNode!;
+    var pipes2:SKNode!;
+    var moving2:SKNode!;
     
-    var goUp:Float = 0;
+    
+    var clouds = SKNode();
+    var hasClouds = false;
     
     let birdCategory:UInt32 = 1<<0
     let worldCategory:UInt32 = 1<<1
@@ -41,33 +49,44 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let pipeCategory2:UInt32 = 1<<5
     
     let scoreCategory:UInt32 = 1<<6
-
+    
     var debug = true;
-    var gyroYValue = NSInteger();
-    var gyroYValueLabelNode = SKLabelNode();
-    var acclYValue = NSInteger();
-    var acclYValueLabelNode = SKLabelNode();
     let motionManager = CMMotionManager();
     
     var screenWidth:CGFloat = 0;
     var screenHeight:CGFloat = 0;
-
+    
     
     var currentMaxAccelX:Double = 0;
     var currentMaxAccelY:Double = 0;
     
-    var rightScreen = SKSpriteNode()
+    var rightScreen = SKShapeNode()
     var background2 = SKShapeNode();
     var halfFrame:Float = 2;
+    
+    var birdZ:CGFloat = 0.0;
+    var birdX:CGFloat = 0.0;
     
     override func didMoveToView(view: SKView) {
         
         screenWidth = view.frame.width;
         screenHeight = view.frame.height;
         
+        let distanceToMove = CGFloat(self.frame.size.height);
+        let movePipes = SKAction.moveByX(0, y: -distanceToMove, duration: NSTimeInterval(0.01*distanceToMove));
+        let moveSheeps = SKAction.moveByX(0, y: -distanceToMove, duration: NSTimeInterval(0.007*distanceToMove));
+        let moveBg = SKAction.moveByX(0, y: -distanceToMove, duration: NSTimeInterval(0.01*distanceToMove));
+        let resetBg = SKAction.moveBy(CGVectorMake(0, +distanceToMove), duration: NSTimeInterval(0));
+        
+        let removePipes = SKAction.removeFromParent();
+        
+        pipeMoveAndRemove = SKAction.sequence([movePipes,removePipes]);
+        sheepMoveAndRemove = SKAction.sequence([moveSheeps,removePipes]);
+        bgMoveAndRemove = SKAction.repeatActionForever(SKAction.sequence([moveBg,resetBg]));
+
+        
         //gyro
         motionManager.accelerometerUpdateInterval = 0.2
-        motionManager.gyroUpdateInterval = 0.1
         halfFrame = Float(self.frame.width)/2;
         
         motionManager.startAccelerometerUpdatesToQueue(NSOperationQueue.currentQueue(), withHandler: {(accelerometerData: CMAccelerometerData!, error:NSError!)in
@@ -78,35 +97,64 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         })
         
-        motionManager.startGyroUpdatesToQueue(NSOperationQueue.currentQueue(), withHandler: {(gyroData: CMGyroData!, error: NSError!)in
-            self.outputRotationData(gyroData.rotationRate)
-            if (error != nil)
-            {
-                println("\(error)")
-            }
-        })
-        
         reset = false;
-
+        
         self.physicsWorld.contactDelegate = self;
         
         skyColor = SKColor(red: 81.0/255.0, green: 192.0/255.0, blue: 201.0/255.0, alpha: 1.0);
         self.backgroundColor = skyColor;
+    
+        var background2 = SKNode();
+        background2.zPosition = 5;
+        background2.position = CGPointMake(self.frame.width/2, self.frame.height/2);
+        
+        var bgTexture = SKTexture(imageNamed: "grass");
+        bgTexture.filteringMode = SKTextureFilteringMode.Nearest;
+        
+        for index in -30...30 {
+            let bg = SKSpriteNode(texture: bgTexture);
+            bg.zPosition = -100;
+            //bg.anchorPoint = CGPointZero;
+            bg.position = CGPoint(x: 0, y: bg.size.height * CGFloat(index))
+            bg.name = "background";
+
+            var b2 = bg.copy() as SKSpriteNode;
+            b2.position = CGPoint(x: self.frame.size.width/2, y: bg.size.height * CGFloat(index))
+            b2.zPosition = 7;
+                
+            self.addChild(bg);
+            self.addChild(b2);
+            bg.runAction(bgMoveAndRemove);
+            b2.runAction(bgMoveAndRemove);
+        }
         
         moving = SKNode();
         self.addChild(moving);
-        pipes = SKNode();
-        moving.addChild(pipes);
         
         
         var birdTexture = SKTexture(imageNamed: "bird-01");
         birdTexture.filteringMode = SKTextureFilteringMode.Nearest;
+
+        var birdTexture2 = SKTexture(imageNamed: "bird-02");
+        birdTexture2.filteringMode = SKTextureFilteringMode.Nearest;
+
+        
+        objTexture = SKTexture(imageNamed: "object_l");
+        objTexture.filteringMode = SKTextureFilteringMode.Nearest;
+
+        objTexture2 = SKTexture(imageNamed: "object_r");
+        objTexture2.filteringMode = SKTextureFilteringMode.Nearest;
+
+        
+        sheepTexture = SKTexture(imageNamed: "sheep");
+        sheepTexture.filteringMode = SKTextureFilteringMode.Nearest;
         
         bird = SKSpriteNode(texture: birdTexture);
-        bird.setScale(2);
-        bird.position = CGPoint(x: self.frame.size.width*0.35, y: self.frame.size.height*0.6);
+        bird.setScale(0.4);
+        bird.position = CGPoint(x: self.frame.size.width / 4, y: self.frame.size.height*0.6);
         
-        bird.physicsBody = SKPhysicsBody(circleOfRadius: bird.size.height/2);
+        bird.zPosition = 10;
+        bird.physicsBody = SKPhysicsBody(circleOfRadius: bird.size.height/4);
         bird.physicsBody?.dynamic = false;
         bird.physicsBody?.allowsRotation = false;
         
@@ -114,164 +162,128 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         bird.physicsBody?.collisionBitMask = worldCategory | pipeCategory;
         bird.physicsBody?.contactTestBitMask = worldCategory | pipeCategory;
         
-
-        
-        groundTexture = SKTexture(imageNamed: "ground");
-        groundTexture.filteringMode = SKTextureFilteringMode.Nearest;
-        
-        moveGround();
-        
-        for var i:CGFloat = 0; i<2.0 + self.frame.size.width/(groundTexture.size().width*2.0); i++ {
-            sprite = SKSpriteNode(texture: groundTexture);
-            sprite.setScale(2.0);
-            sprite.position = CGPointMake(i*sprite.size.width, sprite.size.height/2);
-            sprite.runAction(moveGroundSpritesForever);
-            moving.addChild(sprite);
-        }
-        
-
-        ground.position = CGPointMake(0, groundTexture.size().height);
-        ground.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(self.frame.size.width, groundTexture.size().height*2));
-        ground.physicsBody?.dynamic = false;
-        ground.physicsBody?.categoryBitMask = worldCategory;
-        self.addChild(ground);
-        
-        pipeUpTexture = SKTexture(imageNamed: "pipeup");
-        pipeDownTexture = SKTexture(imageNamed: "pipedown");
-        pipeUpTexture.filteringMode = .Nearest;
-        pipeDownTexture.filteringMode = .Nearest;
-        
-        let distanceToMove = CGFloat(self.frame.size.width * 2 * pipeUpTexture.size().width);
-        let movePipes = SKAction.moveByX(-distanceToMove, y: 0, duration: NSTimeInterval(0.01*distanceToMove));
-        let removePipes = SKAction.removeFromParent();
-        
-        pipeMoveAndRemove = SKAction.sequence([movePipes,removePipes]);
         
         //spawnpipes
         
         let spawn = SKAction.runBlock({() in self.spawnPipes()});
-        let delay = SKAction.waitForDuration(NSTimeInterval(2.0));
+        let delay = SKAction.waitForDuration(NSTimeInterval(0.5));
         let spawnThenDelay = SKAction.sequence([spawn,delay]);
         let spawnThenDelayForever = SKAction.repeatActionForever(spawnThenDelay);
         
         self.runAction(spawnThenDelayForever);
         
+        let box = CGRectMake(self.frame.width/2, 0, self.frame.width/2, self.frame.height/2);
+        var bgcrop = SKCropNode();
+        var mask = SKSpriteNode(color:SKColor.blackColor(), size: CGSizeMake(self.frame.width, self.frame.height))
+        mask.anchorPoint = CGPointZero;
         
-        let box = CGRectMake(self.frame.width/2, 0, self.frame.width/2, self.frame.height);
-        background2.path = UIBezierPath(rect: box).CGPath;
-        background2.fillColor = backgroundColor;
+        bgcrop.maskNode = mask;
+        bgcrop.addChild(background2);
+        rightScreen.addChild(bgcrop);
         
-        rightScreen.addChild(background2)
-        
-        
-        
-        let bird2:SKSpriteNode = bird.copy() as SKSpriteNode;
+        bird2 = bird.copy() as SKSpriteNode;
+        bird2.texture = birdTexture2;
         bird.physicsBody?.dynamic = true;
-        bird2.position = CGPointMake(CGFloat(halfFrame + Float(bird.position.x) - 4), bird.position.y);
+        bird2.position = CGPoint(x: self.frame.size.width * 3 / 4, y: self.frame.size.height*0.6);
+        bird2.zPosition = 11;
+        
+        moving2 = SKNode();
+        rightScreen.addChild(moving2);
         rightScreen.addChild(bird2);
         
-        //self.addChild(rightScreen);
+        self.addChild(rightScreen);
         
         
         //skor
         score = 0;
         scoreLabelNode = SKLabelNode(fontNamed: "Calibri");
-        scoreLabelNode.position = CGPointMake(CGRectGetMidX(self.frame), 3*self.frame.size.height/4 + 100);
+        scoreLabelNode.position = CGPointMake(self.frame.size.width - 30, 3*self.frame.size.height/4 + 100);
         scoreLabelNode.zPosition = 50;
         scoreLabelNode.text = String(score);
         self.addChild(scoreLabelNode);
-
+        
         
         if(!debug) {
             return;
         }
         
-        //gyro
-        gyroYValue = 0;
-        gyroYValueLabelNode = SKLabelNode(fontNamed: "Calibri");
-        gyroYValueLabelNode.text = NSString(format:"%.4f", "0")
-        gyroYValueLabelNode.position = CGPointMake(CGRectGetMaxX(self.frame) - gyroYValueLabelNode.frame.width, CGRectGetMaxY(self.frame)-150);
-        gyroYValueLabelNode.zPosition = 50;
-        self.addChild(gyroYValueLabelNode);
-        
-        //accl
-        acclYValue = 0;
-        acclYValueLabelNode = SKLabelNode(fontNamed: "Calibri");
-        acclYValueLabelNode.text = NSString(format:"%.4f", "0")
-        acclYValueLabelNode.position = CGPointMake(CGRectGetMaxX(self.frame) - acclYValueLabelNode.frame.width, CGRectGetMaxY(self.frame)-200);
-        acclYValueLabelNode.zPosition = 50;
-        self.addChild(acclYValueLabelNode);
-        
-        
+        self.addChild(clouds);
         self.addChild(bird);
     }
     
-    func moveGround() {
-        let moveGroundSprite = SKAction.moveByX(-groundTexture.size().width*2 , y: 0, duration: NSTimeInterval(0.007*groundTexture.size().width*2));
-        let resetGroundSprite = SKAction.moveByX(groundTexture.size().width*2, y: 0, duration: 0);
-        moveGroundSpritesForever = SKAction.repeatActionForever(SKAction.sequence([moveGroundSprite,resetGroundSprite]));
+    func spawnPipes() {
+        
+        if (arc4random_uniform(10) < 2) {
+            
+            let z:CGFloat = 20;
+            let x:CGFloat = CGFloat(arc4random_uniform(1000))/2000 * self.frame.size.width;
+            
+            println(x - z * 0.8);
+            
+            let sheep = SKSpriteNode(texture: sheepTexture);
+            sheep.position = CGPointMake(x - z * 0.8, self.frame.size.height * 2);
+            sheep.zPosition = 20;
+            sheep.setScale(0.3);
+            sheep.physicsBody = SKPhysicsBody(rectangleOfSize: sheep.size);
+            sheep.physicsBody?.dynamic = false;
+            sheep.physicsBody?.categoryBitMask = scoreCategory;
+            sheep.physicsBody?.contactTestBitMask = birdCategory;
+            sheep.runAction(pipeMoveAndRemove);
+            moving.addChild(sheep);
+            
+            println(self.frame.width/2 * 1.2 + 50 + x + z);
+            let sheep2 = sheep.copy() as SKSpriteNode;
+            sheep2.position = CGPointMake(self.frame.width/2 * 1.2 + 50 + x + z, self.frame.size.height * 2);
+            sheep2.zPosition = 10;
+            sheep2.runAction(pipeMoveAndRemove);
+            moving2.addChild(sheep2);
+        }
+        
+        let z:CGFloat = 20;
+        let x:CGFloat = CGFloat(arc4random_uniform(1000))/2000 * self.frame.size.width;
+        let object = SKSpriteNode(texture: objTexture);
+        object.position = CGPointMake(x - z * 0.8, self.frame.size.height * 2);
+        object.zPosition = 6;
+        object.setScale(0.9);
+        object.physicsBody = SKPhysicsBody(rectangleOfSize: object.size);
+        object.physicsBody?.dynamic = false;
+        object.physicsBody?.categoryBitMask = pipeCategory;
+        object.physicsBody?.contactTestBitMask = birdCategory;
+        
+        let object2 = object.copy() as SKSpriteNode;
+        object2.texture = objTexture2;
+        // 50 is a eye buffer
+        object2.position = CGPointMake(self.frame.width/2 * 1.2 + 50 + x + z, self.frame.size.height * 2);
+        object2.zPosition = 10;
+        
+        object.runAction(pipeMoveAndRemove);
+        object2.runAction(pipeMoveAndRemove);
+
+        moving.addChild(object);
+        moving2.addChild(object2);
     }
     
-    func spawnPipes() {
-        let pipePair = SKNode();
-        pipePair.position = CGPointMake(self.frame.size.width + pipeUpTexture.size().width * 2 , 0);
-        
-        pipePair.zPosition = -10;
-        
-        let height = UInt32(self.frame.size.height/4);
-        let y = arc4random() % height + height;
-        
-        let pipeDown = SKSpriteNode(texture: pipeDownTexture);
-        pipeDown.setScale(0.5);
-        pipeDown.position = CGPointMake(0, CGFloat(y) + pipeDown.size.height + CGFloat(pipeGap));
-        
-        pipeDown.physicsBody = SKPhysicsBody(rectangleOfSize: pipeDown.size);
-        pipeDown.physicsBody?.dynamic = false;
-        pipeDown.physicsBody?.categoryBitMask = pipeCategory;
-        pipeDown.physicsBody?.contactTestBitMask = birdCategory;
-        pipePair.addChild(pipeDown);
-        
-        let pipeUp = SKSpriteNode(texture: pipeUpTexture);
-        pipeUp.setScale(0.5);
-        pipeUp.position = CGPointMake(0, CGFloat(y));
-        
-        pipeUp.physicsBody = SKPhysicsBody(rectangleOfSize: pipeUp.size);
-        pipeUp.physicsBody?.dynamic = false;
-        pipeUp.physicsBody?.categoryBitMask = pipeCategory;
-        pipeUp.physicsBody?.contactTestBitMask = birdCategory;
-        pipePair.addChild(pipeUp);
-        
-        var contactNode = SKNode();
-        contactNode.position = CGPointMake(pipeDown.size.width+bird.size.width/2, CGRectGetMidY(self.frame));
-        contactNode.physicsBody = SKPhysicsBody(rectangleOfSize: CGSizeMake(pipeUp.size.width, self.frame.size.height));
-        contactNode.physicsBody?.dynamic = false;
-        contactNode.physicsBody?.categoryBitMask = scoreCategory;
-        contactNode.physicsBody?.contactTestBitMask = birdCategory;
-        pipePair.addChild(contactNode);
-        
-        pipePair.runAction(pipeMoveAndRemove);
-        pipes.addChild(pipePair);
-        
-    }
     func gameReset()-> Void {
-        bird.position = CGPointMake(10, self.frame.size.height*0.6);
+        bird.position = CGPoint(x: self.frame.size.width * 1 / 4 * 1.2, y: self.frame.size.height*0.6);
         bird.physicsBody?.velocity = CGVectorMake(0, 0);
         bird.physicsBody?.collisionBitMask = worldCategory | pipeCategory;
         bird.speed = 1;
         bird.zRotation = 0;
-
-        bird2.position = CGPointMake(CGFloat(halfFrame + Float(bird.position.x) - 4), self.frame.size.height*0.6);
+        
+        bird2.position = CGPoint(x: self.frame.size.width * 3 / 4 * 1.2, y: self.frame.size.height*0.6);
         bird2.physicsBody?.velocity = CGVectorMake(0, 0);
         bird2.physicsBody?.collisionBitMask = worldCategory | pipeCategory;
         bird2.speed = 1;
         bird2.zRotation = 0;
-
-
+        
+        
         score = 0;
         reset = false;
-        pipes.removeAllChildren();
+        moving.removeAllChildren();
+        moving2.removeAllChildren();
         scoreLabelNode.text = String(score);
         moving.speed = 1; // ground hareket animasyonu tekrar başlatır
+        moving2.speed = 1; // ground hareket animasyonu tekrar başlatır
     }
     
     
@@ -281,78 +293,123 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
     func didBeginContact(contact: SKPhysicsContact) {
-        if(moving.speed > 0){
+        if(moving.speed > 0 && birdZ < -0.9){
             
             if(( contact.bodyA.categoryBitMask & scoreCategory ) == scoreCategory || ( contact.bodyB.categoryBitMask & scoreCategory ) == scoreCategory ) {
                 
-                //skoru arttırır ve label a yazar
+                
+                contact.bodyA.node?.removeFromParent();
                 score++;
-                print("anıl \(score)");
                 scoreLabelNode.text = String(score);
                 
-                //skor artınca label büyüt ve küçült animasyonu
-                scoreLabelNode.runAction(SKAction.sequence([SKAction.scaleTo(1.5, duration: NSTimeInterval(0.1)),SKAction.scaleTo(1, duration: NSTimeInterval(0.1))]));
+                scoreLabelNode.runAction(SKAction.sequence([SKAction.scaleTo(1.5, duration: NSTimeInterval(0.1)),SKAction.scaleTo(1, duration: NSTimeInterval(0.3))]));
+                //self.runAction(SKAction.playSoundFileNamed("sheep.wav", waitForCompletion: false));
             }
             else {
                 
                 moving.speed = 0;
+                moving2.speed = 0;
                 bird.physicsBody?.collisionBitMask = worldCategory | pipeCategory;
-                //kuş çarpar dönererek aşağıya düşer
+                bird2.physicsBody?.collisionBitMask = worldCategory | pipeCategory;
                 bird.speed = 0;
                 bird2.speed = 0;
                 self.removeActionForKey("bitir")
-                self.runAction(SKAction.sequence([SKAction.repeatAction(SKAction.sequence([SKAction.runBlock({
-                    self.backgroundColor = SKColor(red: 1, green: 0, blue: 0, alpha: 1.0);
-                    self.background2.fillColor = SKColor(red: 1, green: 0, blue: 0, alpha: 1.0);
-                }),SKAction.waitForDuration(NSTimeInterval(0.05)), SKAction.runBlock({
+                self.runAction(SKAction.sequence([SKAction.repeatAction(SKAction.sequence([SKAction.waitForDuration(NSTimeInterval(0.05)), SKAction.runBlock({
                     self.backgroundColor = self.skyColor;
                     self.background2.fillColor = self.skyColor;
                 }), SKAction.waitForDuration(NSTimeInterval(0.05))]), count:4), SKAction.runBlock({
                     self.reset = true
                 })]), withKey: "bitir")
+                
+                self.runAction(SKAction.sequence([SKAction.waitForDuration(3), SKAction.runBlock({
+                    self.gameReset();
+                })]));
             }
         }
         
     }
-
+    
     override func update(currentTime: CFTimeInterval) {
-        var maxY:CGFloat = 768 - bird.size.width/2;
-        var minY:CGFloat = bird.size.width/2 + ground.frame.height;
         
-        var newY:CGFloat = 0;
-        var newX:CGFloat = 0;
-        
-        
-        var raised:CGFloat = CGFloat(currentMaxAccelY) + 0.4;
-        var scaled = raised * (maxY - minY);
-        newY = minY + scaled;
-        
-        if (newY < minY) {
-            newY = minY;
+    
+        if moving.speed == 0 {
+            return;
         }
+        
+        self.enumerateChildNodesWithName("background", usingBlock: { (node:SKNode!, stop:UnsafeMutablePointer <ObjCBool>) -> Void in
+            let bg = node as SKSpriteNode;
+            bg.position = CGPointMake(bg.position.x, bg.position.y - 5);
+            
+            if bg.position.x <= -bg.size.width {
+                bg.position = CGPointMake(bg.position.x + bg.size.width * 2, bg.position.y);
+            }
+        });
+        
+        if (!hasClouds) {
+            if birdZ > -0.9 {
+                hasClouds = true;
+                var path = NSBundle.mainBundle().pathForResource("Clouds", ofType: "sks")
+                for index in 1...5 {
+                    var cloud:SKEmitterNode = NSKeyedUnarchiver.unarchiveObjectWithFile(path!) as SKEmitterNode;
+                    let x:CGFloat = CGFloat(arc4random_uniform(1000))/2000 * self.frame.size.width;
+                    let y:CGFloat = CGFloat(arc4random_uniform(1000))/1000 * self.frame.size.height;
+                    cloud.position = CGPointMake(x, y);
+                    cloud.zPosition = 10;
+                    
+                    
+                    let cloud2 = cloud.copy() as SKEmitterNode;
+                    cloud2.position = CGPointMake(self.frame.width/2 + x, y);
+                    cloud.zPosition = 10;
+                    
+                    clouds.addChild(cloud);
+                    clouds.addChild(cloud2);
+                }
 
-        if (newY > maxY) {
-            newY = maxY;
+            }
+        } else {
+            if birdZ < -0.9 {
+                hasClouds = false;
+                
+                for cloud in clouds.children {
+                    cloud.runAction(SKAction.sequence([  SKAction.fadeAlphaTo(0, duration: 0.8), SKAction.runBlock({
+                        cloud.removeFromParent();
+                    }) ]));
+                }
+            }
         }
         
-        println(newY);
+        var maxX:CGFloat = self.frame.width/2;
+        var minX:CGFloat = 0;
         
-        if self.reset {
-            print("ww");
-        } else {
-            bird.position = CGPointMake(20, newY);
+        var zoomFactor:CGFloat = 30.0;
+        
+        var newX = (-birdX + 0.5) * (maxX - minX);
+        var newY:CGFloat = 300 + zoomFactor * (birdZ + 1);
+        var newZ:CGFloat = zoomFactor * (birdZ + 1);
+        
+        if newY > 400 {
+            newY = 400;
+        }
+        
+        if newZ > 100 {
+            newZ = 50;
+        }
+        
+        if newZ < 0 {
+            newZ = 0;
+        }
+        
+
+        if  (!self.reset) {
+            bird.position = CGPointMake((newX+newZ) * 0.8, newY);
+            bird2.position = CGPointMake((self.frame.width/2+newX-newZ) * 1.2, newY);
         }
     }
     
     func outputAccelerationData(acceleration:CMAcceleration)
     {
-        gyroYValueLabelNode.text = NSString(format:"%.4f", acceleration.z);
-        goUp = Float(acceleration.z);
-        currentMaxAccelY = acceleration.z;
+        birdZ = CGFloat(acceleration.z);
+        birdX = CGFloat(acceleration.y);
     }
-    
-    func outputRotationData(rotation:CMRotationRate)
-    {
-        acclYValueLabelNode.text = NSString(format: "%.4f", rotation.z);
-    }
+
 }
