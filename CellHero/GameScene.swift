@@ -29,6 +29,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var pipes:SKNode!;
     var moving:SKNode!;
     
+    var goUp:Double = 0;
+    
     let birdCategory:UInt32 = 1<<0
     let worldCategory:UInt32 = 1<<1
     let pipeCategory:UInt32 = 1<<2
@@ -38,13 +40,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     let pipeCategory2:UInt32 = 1<<5
     
     let scoreCategory:UInt32 = 1<<6
+
+    var debug = true;
+    var gyroYValue = NSInteger();
+    var gyroYValueLabelNode = SKLabelNode();
+    var acclYValue = NSInteger();
+    var acclYValueLabelNode = SKLabelNode();
+    let motionManager = CMMotionManager();
     
-    var rightScreen = SKSpriteNode();
-    var halfFrame:Float = 2;;
+
+    
+    var rightScreen = SKSpriteNode()
+    var background2 = SKShapeNode();
+    var halfFrame:Float = 2;
     
     override func didMoveToView(view: SKView) {
         
+        //gyro
+        motionManager.accelerometerUpdateInterval = 0.2
+        motionManager.gyroUpdateInterval = 0.2
         halfFrame = Float(self.frame.width)/2;
+        
+        motionManager.startAccelerometerUpdatesToQueue(NSOperationQueue.currentQueue(), withHandler: {(accelerometerData: CMAccelerometerData!, error:NSError!)in
+            self.outputAccelerationData(accelerometerData.acceleration)
+            if (error != nil)
+            {
+                println("\(error)")
+            }
+        })
+        
+        motionManager.startGyroUpdatesToQueue(NSOperationQueue.currentQueue(), withHandler: {(gyroData: CMGyroData!, error: NSError!)in
+            self.outputRotationData(gyroData.rotationRate)
+            if (error != nil)
+            {
+                println("\(error)")
+            }
+        })
         
         reset = false;
 
@@ -110,7 +141,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         pipeMoveAndRemove = SKAction.sequence([movePipes,removePipes]);
         
-        
         //spawnpipes
         
         let spawn = SKAction.runBlock({() in self.spawnPipes()});
@@ -120,9 +150,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
         self.runAction(spawnThenDelayForever);
         
-        
-
-        var background2 = SKShapeNode();
         
         let box = CGRectMake(self.frame.width/2, 0, self.frame.width/2, self.frame.height);
         background2.path = UIBezierPath(rect: box).CGPath;
@@ -217,13 +244,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         
     }
     func gameReset()-> Void {
-        bird.position = CGPointMake(self.frame.size.width*0.35, self.frame.size.height*0.6);
+        bird.position = CGPointMake(10, self.frame.size.height*0.6);
         bird.physicsBody?.velocity = CGVectorMake(0, 0);
         bird.physicsBody?.collisionBitMask = worldCategory | pipeCategory;
         bird.speed = 1;
         bird.zRotation = 0;
-        bird2.position = bird.position;
-        bird2.zRotation = bird.zRotation;
+
+        bird2.position = CGPointMake(CGFloat(halfFrame + Float(bird.position.x) - 4), self.frame.size.height*0.6);
+        bird2.physicsBody?.velocity = CGVectorMake(0, 0);
+        bird2.physicsBody?.collisionBitMask = worldCategory | pipeCategory;
+        bird2.speed = 1;
+        bird2.zRotation = 0;
+
+
         score = 0;
         reset = false;
         pipes.removeAllChildren();
@@ -233,14 +266,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     
     override func touchesBegan(touches: NSSet, withEvent event: UIEvent) {
-        /* Called when a touch begins */
-        if(moving.speed > 0){
-            for touch: AnyObject in touches {
-                let location = touch.locationInNode(self);
-                bird.physicsBody?.velocity = CGVectorMake(0, 0);
-                bird.physicsBody?.applyImpulse(CGVectorMake(0, 25));
-            }
-        }else if reset{
+        if reset{
             self.gameReset();
         }
     }
@@ -268,9 +294,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 
                 self.removeActionForKey("bitir")
                 self.runAction(SKAction.sequence([SKAction.repeatAction(SKAction.sequence([SKAction.runBlock({
-                    self.backgroundColor = SKColor(red: 1, green: 0, blue: 0, alpha: 1.0)
+                    self.backgroundColor = SKColor(red: 1, green: 0, blue: 0, alpha: 1.0);
+                    self.background2.fillColor = SKColor(red: 1, green: 0, blue: 0, alpha: 1.0);
                 }),SKAction.waitForDuration(NSTimeInterval(0.05)), SKAction.runBlock({
-                    self.backgroundColor = self.skyColor
+                    self.backgroundColor = self.skyColor;
+                    self.background2.fillColor = self.skyColor;
                 }), SKAction.waitForDuration(NSTimeInterval(0.05))]), count:4), SKAction.runBlock({
                     self.reset = true
                 })]), withKey: "bitir")
@@ -293,20 +321,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     override func update(currentTime: CFTimeInterval) {
         /* Called before each frame is rendered */
-        bird.zRotation = self.clamp( -1, max: 0.5, value: bird.physicsBody!.velocity.dy * ( bird.physicsBody!.velocity.dy < 0 ? 0.003 : 0.001));
-        
-        bird2.position = CGPointMake(CGFloat(halfFrame + Float(bird.position.x) - 4), bird.position.y);
-        bird2.zRotation = bird.zPosition;
+        bird.position.y.advancedBy(CGFloat(goUp));
+        bird2.position.y.advancedBy(CGFloat(goUp));
+        goUp = 0;
         
     }
     
     func outputAccelerationData(acceleration:CMAcceleration)
     {
-        gyroYValueLabelNode.text = NSString(format:"%.4f", acceleration.y);
+        gyroYValueLabelNode.text = NSString(format:"%.4f", acceleration.z);
+        goUp = acceleration.z * 2;
     }
     
     func outputRotationData(rotation:CMRotationRate)
     {
-        acclYValueLabelNode.text = NSString(format: "%.4f", rotation.y);
+        acclYValueLabelNode.text = NSString(format: "%.4f", rotation.z);
     }
 }
